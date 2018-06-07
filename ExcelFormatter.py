@@ -198,6 +198,48 @@ class ExcelFormatter(object):
 				cell_index += 1
 		return errors
 
+	def CheckTotalLines(self, total_column_names, column_names):
+		errors = 0
+
+		total_column_number_idx = self.GetColumnIndicesByName(total_column_names)[0]
+		total_column_range_idx = self.GetColumnIndicesByName(total_column_names)[1]
+
+		cell_index = 3
+
+		for index, selected_column in enumerate(islice(self.ws.iter_cols(), total_column_number_idx, total_column_number_idx+1)):
+			for cell in islice(selected_column, 2, None):
+				total = 0
+				total_min_range = 0
+				total_max_range = 0
+				is_range = False
+
+				for column_pair in column_names:
+					column_number_idx = self.GetColumnIndicesByName(column_pair)[0]
+					column_range_idx = self.GetColumnIndicesByName(column_pair)[1]
+
+					number_cell = self.ws.cell(row=cell_index, column=column_number_idx + 1)
+					range_cell = self.ws.cell(row=cell_index, column=column_range_idx + 1)
+
+					if number_cell.value is None:
+						if re.match(r"^[']?\d{1,10}-\d{1,10}$", str(range_cell.value).strip()) and str(range_cell.value).strip() != "NA":
+							range_value = str(range_cell.value).strip().replace("'", "").split("-")
+							total_min_range += int(range_value[0])
+							total_max_range += int(range_value[1])
+							is_range = True
+					elif re.match(r"^\d{1,10}$", str(number_cell.value).strip()):
+						total += int(number_cell.value)
+
+				range_cell = self.ws.cell(row=cell_index, column=total_column_range_idx + 1)
+				if is_range:
+					expected_value = str(total_min_range + total) + "-" + str(total_max_range + total)
+					cell.value = ""
+					range_cell.value = expected_value
+				else:
+					cell.value = total
+					range_cell.value = ""
+				cell_index += 1
+		return errors
+
 	def CheckYYNOAPPLines(self, column_names):
 		errors = 0
 		for idx in self.GetColumnIndicesByName(column_names):
