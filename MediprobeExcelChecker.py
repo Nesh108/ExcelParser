@@ -1,15 +1,15 @@
 import sys
-from TextShower import TextShower
 from ExcelFormatter import ExcelFormatter
 from itertools import islice
+import tkinter as tk
+from tkinter.filedialog import askopenfilename, asksaveasfilename
 
 def PrintResults(errors_found):
 	if errors_found >= 0:
 		print(' ' + str(errors_found) + ' Errors Found.')
 
-text_shower = 0
-accepted_filename = False
-output_filename = 'output.xlsx'
+input_filename = ""
+output_filename = ""
 errors_found = -1
 
 list_allowed_states = ['Gujarat', 'Madhya Pradesh', 'Maharashtra', 'Rajasthan']
@@ -19,15 +19,20 @@ list_specialities = [['Hospital_Specialities_Internal_Medicine', 'Hospital_Physi
 list_bed_totals = [['Hospital_Beds_General', 'Hospital_Beds_General_Range'], ['Hospital_Beds_Twin_Share', 'Hospital_Beds_Twin_Share_Range'], ['Hospital_Beds_Single', 'Hospital_Beds_Single_Range'], ['Hospital_Beds_ICU_NICU', 'Hospital_Beds_ICU_NICU_Range'], ['Hospital_Beds_Single_AC', 'Hospital_Beds_Single_AC_Range'], ['Hospital_Beds_Twin_Share_AC', 'Hospital_Beds_Twin_Share_AC_Range'], ['Hospital_Beds_Suite', 'Hospital_Beds_Suite_Range'], ['Hospital_Beds_Delux', 'Hospital_Beds_Delux_Range'], ['Hospital_Beds_Others', 'Hospital_Beds_Others_Range'], ['Hospital_Beds_Day_Care', 'Hospital_Beds_Day_Care_Range']]
 list_nurse_totals = [['Hospital_NursesGeneral_Ward', 'Hospital_NursesGeneral_Ward_Range'],['Hospital_NursesTwin_Share', 'Hospital_NursesTwin_Share_Range'],['Hospital_NursesSingle', 'Hospital_NursesSingle_Range'],['Hospital_NursesICU', 'Hospital_NursesICU_Range'],['Hospital_NursesSingle_AC', 'Hospital_NursesSingle_AC_Range'],['Hospital_NursesTwin_Share_AC', 'Hospital_NursesTwin_Share_AC_Range'],['Hospital_NursesSuite', 'Hospital_NursesSuite_Range'],['Hospital_Nurses_Delux', 'Hospital_Nurses_Delux_Range'],['Hospital_Nurses_Others', 'Hospital_Nurses_Others_Range'],['Hospital_NursesDay_Care', 'Hospital_NursesDay_Care_Range']]
 
-while not accepted_filename:
-	text_shower = TextShower('Enter Filename (.xls/.xlsx)')
-	text_shower.waitForInput()
-	if text_shower.getString().endswith(('', 'xls', 'xlsx')):
-		accepted_filename = True
+root = tk.Tk()
+input_filename = askopenfilename(title="Select File to Process...", filetypes=(("Excel Files", "*.xls;*.xlsx"),
+                                               ("All files", "*.*") ))
+output_filename = asksaveasfilename(title="Export to...", filetypes=(("Excel Files", "*.xls;*.xlsx"),
+                                               ("All files", "*.*") ))
 
-if text_shower.getString() is not '':
-	print('Starting Macro on "' + text_shower.getString() + '"...')
-	excel_form = ExcelFormatter(text_shower.getString())
+if not output_filename.endswith(tuple(['xls', 'xlsx'])):
+	output_filename += '.xlsx'
+
+root.withdraw()
+
+if input_filename is not '':
+	print('Starting Macro on "' + input_filename + '" (Saving to: ' + output_filename + ')...')
+	excel_form = ExcelFormatter(input_filename)
 	print('\tChecking Address Lines...', end="", flush=True)
 	errors_found = excel_form.CheckAddressLines(['Hospital_AddressLine1', 'Hospital_AddressLine2', 'Hospital_AddressLine3'])
 	PrintResults(errors_found)
