@@ -198,7 +198,7 @@ class ExcelFormatter(object):
 				cell_index += 1
 		return errors
 
-	def CheckTotalLines(self, total_column_names, column_names):
+	def CheckTotalLines(self, total_column_names, column_names, range_totals):
 		errors = 0
 
 		total_column_number_idx = self.GetColumnIndicesByName(total_column_names)[0]
@@ -209,7 +209,6 @@ class ExcelFormatter(object):
 		for index, selected_column in enumerate(islice(self.ws.iter_cols(), total_column_number_idx, total_column_number_idx+1)):
 			for cell in islice(selected_column, 2, None):
 				total = 0
-				total_min_range = 0
 				total_max_range = 0
 				is_range = False
 
@@ -223,7 +222,6 @@ class ExcelFormatter(object):
 					if number_cell.value is None:
 						if re.match(r"^[']?\d{1,10}-\d{1,10}$", str(range_cell.value).strip()) and str(range_cell.value).strip() != "NA":
 							range_value = str(range_cell.value).strip().replace("'", "").split("-")
-							total_min_range += int(range_value[0])
 							total_max_range += int(range_value[1])
 							is_range = True
 					elif re.match(r"^\d{1,10}$", str(number_cell.value).strip()):
@@ -231,14 +229,26 @@ class ExcelFormatter(object):
 
 				range_cell = self.ws.cell(row=cell_index, column=total_column_range_idx + 1)
 				if is_range:
-					expected_value = str(total_min_range + total) + "-" + str(total_max_range + total)
+					selected_range = self.GetCorrectTotalRange(total_max_range, range_totals)
 					cell.value = ""
-					range_cell.value = expected_value
+					range_cell.value = selected_range
 				else:
 					cell.value = total
 					range_cell.value = ""
 				cell_index += 1
 		return errors
+
+	def GetCorrectTotalRange(self, total_max_range, range_totals):
+		for r in range_totals:
+			# Get Range Max
+			if r.endswith('<'):
+				val = int(r.split('<')[0])
+			else:
+				val = int(r.split('-')[1])
+
+			if total_max_range <= val:
+				return r
+		return range_totals[len(range_totals)-1]
 
 	def CheckYYNOAPPLines(self, column_names):
 		errors = 0
