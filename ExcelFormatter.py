@@ -149,8 +149,9 @@ class ExcelFormatter(object):
 
     def CheckNumberRangeLines(self, column_names):
         errors = 0
-        column_number_idx = self.GetColumnIndicesByName(column_names)[0]
-        column_range_idx = self.GetColumnIndicesByName(column_names)[1]
+        indices = self.GetColumnIndicesByName(column_names)
+        column_number_idx = indices[0]
+        column_range_idx = indices[1]
         cell_index = 3
         for _, selected_column in enumerate(islice(self.ws.iter_cols(), column_number_idx, column_number_idx+1)):
             for cell in islice(selected_column, 2, None):
@@ -177,9 +178,10 @@ class ExcelFormatter(object):
 
     def CheckSpecialitiesLines(self, column_names):
         errors = 0
-        column_spec_idx = self.GetColumnIndicesByName(column_names)[0]
-        column_number_idx = self.GetColumnIndicesByName(column_names)[1]
-        column_range_idx = self.GetColumnIndicesByName(column_names)[2]
+        indices = self.GetColumnIndicesByName(column_names)
+        column_spec_idx = indices[0]
+        column_number_idx = indices[1]
+        column_range_idx = indices[2]
         cell_index = 3
         for _, selected_column in enumerate(islice(self.ws.iter_cols(), column_spec_idx, column_spec_idx+1)):
             for cell in islice(selected_column, 2, None):
@@ -203,14 +205,11 @@ class ExcelFormatter(object):
 
     def CheckTotalLines(self, total_column_names, column_names, range_totals):
         errors = 0
-
         total_column_number_idx = self.GetColumnIndicesByName(total_column_names)[
             0]
         total_column_range_idx = self.GetColumnIndicesByName(total_column_names)[
             1]
-
         cell_index = 3
-
         for _, selected_column in enumerate(islice(self.ws.iter_cols(), total_column_number_idx, total_column_number_idx+1)):
             for cell in islice(selected_column, 2, None):
                 total = 0
@@ -304,3 +303,63 @@ class ExcelFormatter(object):
 
     def isNotAvailable(self, value):
         return value == "NO" or value == "NI" or value == "NA" or value == "N0" or value == "NP"
+
+    def CheckDuplicateHospitals(self, list_hospital_info):
+        errors = 0
+        hospital_names = []
+        hospital_addr1 = []
+        hospital_addr2 = []
+        hospital_addr3 = []
+        hospital_city = []
+        hospital_state = []
+        indices = self.GetColumnIndicesByName(list_hospital_info)
+        hospital_name_idx = indices[0]
+        hospital_addr1_idx = indices[1]
+        hospital_addr2_idx = indices[2]
+        hospital_addr3_idx = indices[3]
+        hospital_city_idx = indices[4]
+        hospital_state_idx = indices[5]
+        cell_index = 3
+        for _, selected_column in enumerate(islice(self.ws.iter_cols(), hospital_name_idx, hospital_name_idx+1)):
+            for cell in islice(selected_column, 2, None):
+                addr1_cell = self.ws.cell(
+                    row=cell_index, column=hospital_addr1_idx + 1)
+                addr2_cell = self.ws.cell(
+                    row=cell_index, column=hospital_addr2_idx + 1)
+                addr3_cell = self.ws.cell(
+                    row=cell_index, column=hospital_addr3_idx + 1)
+                city_cell = self.ws.cell(
+                    row=cell_index, column=hospital_city_idx + 1)
+                state_cell = self.ws.cell(
+                    row=cell_index, column=hospital_state_idx + 1)
+                duplicate = False
+                try:
+                    index = hospital_names.index(cell.value)
+                except ValueError:
+                    index = -1
+
+                # Hospital Name Found
+                if index is not -1:
+                    duplicate = (addr1_cell == hospital_addr1[index] and
+                                 addr2_cell == hospital_addr2[index] and
+                                 addr3_cell == hospital_addr3[index] and
+                                 city_cell == hospital_city[index] and
+                                 state_cell == hospital_state[index])
+
+                if not duplicate:
+                    hospital_names.append(cell.value)
+                    hospital_addr1.append(addr1_cell.value)
+                    hospital_addr2.append(addr2_cell.value)
+                    hospital_addr3.append(addr3_cell.value)
+                    hospital_city.append(city_cell.value)
+                    hospital_state.append(state_cell.value)
+                else:
+                    self.fillCellColour(cell, self.color_red)
+                    self.fillCellColour(addr1_cell, self.color_red)
+                    self.fillCellColour(addr2_cell, self.color_red)
+                    self.fillCellColour(addr3_cell, self.color_red)
+                    self.fillCellColour(city_cell, self.color_red)
+                    self.fillCellColour(state_cell, self.color_red)
+                    errors += 1
+                cell_index += 1
+        return errors
